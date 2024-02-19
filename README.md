@@ -6,7 +6,7 @@
 ## How to use ?
 
 ```sh
-go get github.com/kilianpaquier/filesystem@latest
+go get -u github.com/kilianpaquier/filesystem@latest
 ```
 
 ## Features

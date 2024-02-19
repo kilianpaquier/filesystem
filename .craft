@@ -1,0 +1,6 @@
+maintainers:
+    - url: kilianpaquier.com
+      name: kilianpaquier
+no_api: true
+no_chart: true
+no_ci: true

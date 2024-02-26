@@ -3,5 +3,5 @@
 ignore:
   - "cmd/**"
   - "**/cobra/**"
-  - "**/tests/***"
+  - "**/tests/**"
   - "**/testutils/**"

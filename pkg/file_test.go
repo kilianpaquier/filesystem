@@ -40,6 +40,15 @@ func TestCopyFile(t *testing.T) {
 		assert.NoError(t, err)
 		assert.FileExists(t, dest)
 	})
+
+	t.Run("success_with_fs", func(t *testing.T) {
+		// Act
+		err := filesystem.CopyFile(src, dest, filesystem.WithFS(filesystem.OS()))
+
+		// Assert
+		assert.NoError(t, err)
+		assert.FileExists(t, dest)
+	})
 }
 
 func TestCopyDir(t *testing.T) {
@@ -60,8 +69,10 @@ func TestCopyDir(t *testing.T) {
 		src := filepath.Join(srcdir, "file.txt")
 		_, err := os.Create(src)
 		require.NoError(t, err)
+
 		dir := filepath.Join(srcdir, "path", "to", "dir")
 		require.NoError(t, os.MkdirAll(dir, filesystem.RwxRxRxRx))
+
 		destdir := filepath.Join(os.TempDir(), "dir_test")
 		t.Cleanup(func() {
 			require.NoError(t, os.RemoveAll(destdir))
@@ -103,5 +114,41 @@ func TestCopyFileWithPerm(t *testing.T) {
 		// Assert
 		assert.NoError(t, err)
 		assert.FileExists(t, dest)
+	})
+
+	t.Run("success", func(t *testing.T) {
+		// Act
+		err := filesystem.CopyFileWithPerm(src, dest, filesystem.RwRwRw, filesystem.WithFS(filesystem.OS()))
+
+		// Assert
+		assert.NoError(t, err)
+		assert.FileExists(t, dest)
+	})
+}
+
+func TestExists(t *testing.T) {
+	t.Run("false_not_exists", func(t *testing.T) {
+		// Arrange
+		invalid := filepath.Join(os.TempDir(), "invalid")
+
+		// Act
+		exists := filesystem.Exists(invalid)
+
+		// Assert
+		assert.False(t, exists)
+	})
+
+	t.Run("true_exists", func(t *testing.T) {
+		// Arrange
+		srcdir := t.TempDir()
+		src := filepath.Join(srcdir, "file.txt")
+		_, err := os.Create(src)
+		require.NoError(t, err)
+
+		// Act
+		exists := filesystem.Exists(src)
+
+		// Assert
+		assert.True(t, exists)
 	})
 }

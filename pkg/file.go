@@ -59,10 +59,8 @@ func CopyFile(src, dest string, opts ...FSOption) error {
 func CopyDir(srcdir, destdir string, opts ...FSOption) error {
 	o := newFSOpt(opts...)
 
-	if !Exists(destdir) {
-		if err := os.Mkdir(destdir, RwxRxRxRx); err != nil {
-			return fmt.Errorf("failed to create folder %s: %w", destdir, err)
-		}
+	if err := os.Mkdir(destdir, RwxRxRxRx); err != nil && !os.IsExist(err) {
+		return fmt.Errorf("failed to create folder %s: %w", destdir, err)
 	}
 
 	entries, err := o.fsys.ReadDir(srcdir)

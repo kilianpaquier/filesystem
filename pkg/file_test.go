@@ -67,8 +67,9 @@ func TestCopyDir(t *testing.T) {
 		// Arrange
 		srcdir := t.TempDir()
 		src := filepath.Join(srcdir, "file.txt")
-		_, err := os.Create(src)
+		file, err := os.Create(src)
 		require.NoError(t, err)
+		require.NoError(t, file.Close())
 
 		dir := filepath.Join(srcdir, "path", "to", "dir")
 		require.NoError(t, os.MkdirAll(dir, filesystem.RwxRxRxRx))
@@ -142,8 +143,9 @@ func TestExists(t *testing.T) {
 		// Arrange
 		srcdir := t.TempDir()
 		src := filepath.Join(srcdir, "file.txt")
-		_, err := os.Create(src)
+		file, err := os.Create(src)
 		require.NoError(t, err)
+		require.NoError(t, file.Close())
 
 		// Act
 		exists := filesystem.Exists(src)

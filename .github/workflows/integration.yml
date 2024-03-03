@@ -80,6 +80,8 @@ jobs:
           - on: windows-latest
             args: env CGO_ENABLED="0"
     runs-on: ${{ matrix.os.on }}
+    env:
+      OS: ${{ matrix.os.on }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -92,6 +94,7 @@ jobs:
         with:
           codecov_yml_path: codecov.yml
           disable_search: true
+          env_vars: OS
           fail_ci_if_error: true
           file: coverage.out
           slug: ${{ github.repository }}

@@ -115,7 +115,8 @@ func (e equalDirClient) filterDiffs(filename string, diffs []diffmatchpatch.Diff
 	filtered := make([]diffmatchpatch.Diff, 0, len(diffs))
 	for _, diff := range diffs {
 		// ignore diff equals
-		if diff.Type == diffmatchpatch.DiffEqual {
+		// ignore windows / linux diffs
+		if diff.Type == diffmatchpatch.DiffEqual || diff.Text == "\r" {
 			continue
 		}
 

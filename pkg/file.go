@@ -8,21 +8,6 @@ import (
 	"path/filepath"
 )
 
-const (
-	// Rw represents a file permission of read/write for current user
-	// and no access for user's group and other groups.
-	Rw fs.FileMode = 0o600
-	// RwRR represents a file permission of read/write for current user
-	// and read-only access for user's group and other groups.
-	RwRR fs.FileMode = 0o644
-	// RwRwRw represents a file permission of read/write for current user
-	// and read/write too for user's group and other groups.
-	RwRwRw fs.FileMode = 0o666
-	// RwxRxRxRx represents a file permission of read/write/execute for current user
-	// and read/execute for user's group and other groups.
-	RwxRxRxRx fs.FileMode = 0o755
-)
-
 // FSOption represents a function taking an opt client to use filesysem package functions.
 type FSOption func(fsOpt *fsOpt)
 
@@ -33,8 +18,19 @@ func WithFS(fsys FS) FSOption {
 	}
 }
 
+// Join represents a function to join multiple elements between them.
+type Join func(elems ...string) string
+
+// WithJoin specifies a specific function to join a srcdir with one of its files in CopyDir.
+func WithJoin(join Join) FSOption {
+	return func(fsOpt *fsOpt) {
+		fsOpt.join = join
+	}
+}
+
 type fsOpt struct {
 	fsys FS
+	join Join
 }
 
 func newFSOpt(opts ...FSOption) *fsOpt {
@@ -46,6 +42,9 @@ func newFSOpt(opts ...FSOption) *fsOpt {
 	}
 	if o.fsys == nil {
 		o.fsys = OS()
+	}
+	if o.join == nil {
+		o.join = filepath.Join
 	}
 	return o
 }
@@ -70,7 +69,7 @@ func CopyDir(srcdir, destdir string, opts ...FSOption) error {
 
 	errs := make([]error, 0, len(entries))
 	for _, entry := range entries {
-		src := filepath.Join(srcdir, entry.Name())
+		src := o.join(srcdir, entry.Name())
 		dest := filepath.Join(destdir, entry.Name())
 
 		// handle directories

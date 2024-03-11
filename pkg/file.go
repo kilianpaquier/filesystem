@@ -3,6 +3,7 @@ package filesystem
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -89,16 +90,23 @@ func CopyFileWithPerm(src, dest string, perm fs.FileMode, opts ...FSOption) erro
 	o := newFSOpt(opts...)
 
 	// read file from fsys (OperatingFS or specific fsys)
-	bytes, err := o.fsys.ReadFile(src)
+	sfile, err := o.fsys.Open(src)
 	if err != nil {
 		return fmt.Errorf("failed to read %s: %w", src, err)
 	}
+	defer sfile.Close()
 
-	// write file destination into OperatingFS
-	if err := os.WriteFile(dest, bytes, perm); err != nil {
-		return fmt.Errorf("failed to write %s: %w", dest, err)
+	dfile, err := os.Create(dest)
+	if err != nil {
+		return fmt.Errorf("failed to create %s: %w", dest, err)
 	}
-	return nil
+	defer dfile.Close()
+
+	if _, err := io.Copy(dfile, sfile); err != nil {
+		return fmt.Errorf("failed to copy file: %w", err)
+	}
+
+	return dfile.Chmod(perm)
 }
 
 // Exists returns a boolean indicating whether the provided input src exists or not.

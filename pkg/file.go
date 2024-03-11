@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -29,9 +28,17 @@ func WithJoin(join Join) FSOption {
 	}
 }
 
+// WithPerm specifies the permission for target file for CopyFile and CopyDir.
+func WithPerm(perm os.FileMode) FSOption {
+	return func(fsOpt *fsOpt) {
+		fsOpt.perm = perm
+	}
+}
+
 type fsOpt struct {
 	fsys FS
 	join Join
+	perm os.FileMode
 }
 
 func newFSOpt(opts ...FSOption) *fsOpt {
@@ -47,12 +54,40 @@ func newFSOpt(opts ...FSOption) *fsOpt {
 	if o.join == nil {
 		o.join = filepath.Join
 	}
+	if o.perm == 0 {
+		o.perm = RwRR
+	}
 	return o
 }
 
 // CopyFile copies a provided file from src to dest with a default permission of 0o644. It fails if it's a directory.
 func CopyFile(src, dest string, opts ...FSOption) error {
-	return CopyFileWithPerm(src, dest, RwRR, opts...)
+	o := newFSOpt(opts...)
+
+	// read file from fsys (OperatingFS or specific fsys)
+	sfile, err := o.fsys.Open(src)
+	if err != nil {
+		return fmt.Errorf("failed to read %s: %w", src, err)
+	}
+	defer sfile.Close()
+
+	// create dest in OS filesystem and not given fsys
+	dfile, err := os.Create(dest)
+	if err != nil {
+		return fmt.Errorf("failed to create %s: %w", dest, err)
+	}
+	defer dfile.Close()
+
+	// copy buffer from src to dest
+	if _, err := io.Copy(dfile, sfile); err != nil {
+		return fmt.Errorf("failed to copy file: %w", err)
+	}
+
+	// update dest permissions
+	if err := dfile.Chmod(o.perm); err != nil {
+		return fmt.Errorf("failed to update %s permissions: %w", dest, err)
+	}
+	return nil
 }
 
 // CopyDir copies recursively a provided directory as destdir. It fails if it's a file.
@@ -83,30 +118,6 @@ func CopyDir(srcdir, destdir string, opts ...FSOption) error {
 		errs = append(errs, CopyFile(src, dest, opts...))
 	}
 	return errors.Join(errs...)
-}
-
-// CopyFileWithPerm copies a provided file from src to dest with specific permissions. It fails if it's a directory.
-func CopyFileWithPerm(src, dest string, perm fs.FileMode, opts ...FSOption) error {
-	o := newFSOpt(opts...)
-
-	// read file from fsys (OperatingFS or specific fsys)
-	sfile, err := o.fsys.Open(src)
-	if err != nil {
-		return fmt.Errorf("failed to read %s: %w", src, err)
-	}
-	defer sfile.Close()
-
-	dfile, err := os.Create(dest)
-	if err != nil {
-		return fmt.Errorf("failed to create %s: %w", dest, err)
-	}
-	defer dfile.Close()
-
-	if _, err := io.Copy(dfile, sfile); err != nil {
-		return fmt.Errorf("failed to copy file: %w", err)
-	}
-
-	return dfile.Chmod(perm)
 }
 
 // Exists returns a boolean indicating whether the provided input src exists or not.

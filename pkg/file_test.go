@@ -43,7 +43,9 @@ func TestCopyFile(t *testing.T) {
 
 	t.Run("success_with_fs", func(t *testing.T) {
 		// Act
-		err := filesystem.CopyFile(src, dest, filesystem.WithFS(filesystem.OS()))
+		err := filesystem.CopyFile(src, dest,
+			filesystem.WithFS(filesystem.OS()),
+			filesystem.WithJoin(filepath.Join))
 
 		// Assert
 		assert.NoError(t, err)
@@ -101,7 +103,7 @@ func TestCopyFileWithPerm(t *testing.T) {
 		src := filepath.Join(tmp, "invalid.txt")
 
 		// Act
-		err := filesystem.CopyFileWithPerm(src, dest, filesystem.RwRwRw)
+		err := filesystem.CopyFileWithPerm(src, dest, filesystem.RwRR)
 
 		// Assert
 		assert.ErrorContains(t, err, "failed to read "+src)
@@ -110,16 +112,18 @@ func TestCopyFileWithPerm(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		// Act
-		err := filesystem.CopyFileWithPerm(src, dest, filesystem.RwRwRw)
+		err := filesystem.CopyFileWithPerm(src, dest, filesystem.RwRR)
 
 		// Assert
 		assert.NoError(t, err)
 		assert.FileExists(t, dest)
 	})
 
-	t.Run("success", func(t *testing.T) {
+	t.Run("success_with_fs", func(t *testing.T) {
 		// Act
-		err := filesystem.CopyFileWithPerm(src, dest, filesystem.RwRwRw, filesystem.WithFS(filesystem.OS()))
+		err := filesystem.CopyFileWithPerm(src, dest, filesystem.RwRR,
+			filesystem.WithFS(filesystem.OS()),
+			filesystem.WithJoin(filepath.Join))
 
 		// Assert
 		assert.NoError(t, err)

@@ -14,8 +14,8 @@ import (
 
 func TestCopyFile(t *testing.T) {
 	tmp := t.TempDir()
-	src := filepath.Join(tmp, "filename.txt")
-	dest := filepath.Join(tmp, "filename-copy.txt")
+	src := filepath.Join(tmp, "file.txt")
+	dest := filepath.Join(tmp, "copy.txt")
 
 	err := os.WriteFile(src, []byte("hey file"), filesystem.RwRR)
 	require.NoError(t, err)
@@ -28,7 +28,19 @@ func TestCopyFile(t *testing.T) {
 		err := filesystem.CopyFile(src, dest)
 
 		// Assert
-		assert.ErrorContains(t, err, "failed to read "+src)
+		assert.ErrorContains(t, err, "failed to read")
+		assert.NoFileExists(t, dest)
+	})
+
+	t.Run("error_destdir_not_exists", func(t *testing.T) {
+		// Arrange
+		dest := filepath.Join(tmp, "invalid", "file.txt")
+
+		// Act
+		err := filesystem.CopyFile(src, dest)
+
+		// Assert
+		assert.ErrorContains(t, err, "failed to create")
 		assert.NoFileExists(t, dest)
 	})
 
@@ -57,13 +69,30 @@ func TestCopyFile(t *testing.T) {
 func TestCopyDir(t *testing.T) {
 	t.Run("error_no_dir", func(t *testing.T) {
 		// Arrange
-		invalid := filepath.Join(os.TempDir(), "invalid")
+		srcdir := filepath.Join(os.TempDir(), "invalid")
 
 		// Act
-		err := filesystem.CopyDir(invalid, t.TempDir())
+		err := filesystem.CopyDir(srcdir, t.TempDir())
 
 		// Assert
 		assert.ErrorContains(t, err, "failed to read directory")
+	})
+
+	t.Run("error_no_destdir", func(t *testing.T) {
+		// Arrange
+		srcdir := t.TempDir()
+		src := filepath.Join(srcdir, "file.txt")
+		file, err := os.Create(src)
+		require.NoError(t, err)
+		require.NoError(t, file.Close())
+
+		destdir := filepath.Join(os.TempDir(), "invalid", "dir")
+
+		// Act
+		err = filesystem.CopyDir(srcdir, destdir)
+
+		// Assert
+		assert.ErrorContains(t, err, "failed to create folder")
 	})
 
 	t.Run("success", func(t *testing.T) {
@@ -74,8 +103,12 @@ func TestCopyDir(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, file.Close())
 
-		dir := filepath.Join(srcdir, "path", "to", "dir")
-		require.NoError(t, os.MkdirAll(dir, filesystem.RwxRxRxRx))
+		srcsubdir := filepath.Join(srcdir, "sub", "dir")
+		require.NoError(t, os.MkdirAll(srcsubdir, filesystem.RwxRxRxRx))
+		srcsub := filepath.Join(srcsubdir, "file.txt")
+		file, err = os.Create(srcsub)
+		require.NoError(t, err)
+		require.NoError(t, file.Close())
 
 		destdir := filepath.Join(os.TempDir(), "dir_test")
 		t.Cleanup(func() {

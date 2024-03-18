@@ -1,6 +1,8 @@
 module github.com/kilianpaquier/filesystem
 
-go 1.22
+go 1.22.0
+
+toolchain go1.22.1
 
 require (
 	github.com/sergi/go-diff v1.3.1

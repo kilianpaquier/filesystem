@@ -2,7 +2,7 @@ module github.com/kilianpaquier/filesystem
 
 go 1.22.0
 
-toolchain go1.22.3
+toolchain go1.22.4
 
 require github.com/stretchr/testify v1.9.0
 
